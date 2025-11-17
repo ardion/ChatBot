@@ -1,0 +1,45 @@
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Buat Pesan Baru</h2>
+            <span class="close-btn" data-modal="addModal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <label for="titleInput">Judul Pesan:</label>
+            <input type="text" id="titleInput" placeholder="Masukkan judul pesan">
+
+            <label style="margin-top: 15px;">Tipe Konten:</label>
+            <div class="content-chips" id="contentChips">
+                <span class="chip active" data-type="text">Teks</span>
+                <span class="chip" data-type="image">Gambar</span>
+                <span class="chip" data-type="file">File</span>
+            </div>
+            
+            <div id="textFields" class="content-fields active-fields">
+                <label for="newMessageInput" style="margin-top: 15px;">Isi Pesan Teks:</label>
+                <textarea id="newMessageInput" placeholder="Tulis isi pesan teks di sini"></textarea>
+            </div>
+
+            <div id="imageFields" class="content-fields" style="display:none;">
+                <label for="imageUpload" style="margin-top: 15px;">Unggah Gambar:</label>
+                <input type="file" id="imageUpload" accept="image/*">
+                
+                <label for="imageCaption" style="margin-top: 15px;">Caption (Opsional):</label>
+                <textarea id="imageCaption" placeholder="Tulis caption gambar di sini"></textarea>
+            </div>
+
+            <div id="fileFields" class="content-fields" style="display:none;">
+                <label for="fileUpload" style="margin-top: 15px;">Unggah File Dokumen:</label>
+                <input type="file" id="fileUpload" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                
+                <label for="fileCaption" style="margin-top: 15px;">Caption (Opsional):</label>
+                <textarea id="fileCaption" placeholder="Tulis caption file di sini"></textarea>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button id="modalCreateBtn" class="save">Buat & Edit</button>
+            <button id="modalAddCancelBtn" class="cancel">Batal</button>
+        </div>
+    </div>
+</div>

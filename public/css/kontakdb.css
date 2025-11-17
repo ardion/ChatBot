@@ -1,0 +1,151 @@
+/* Styling untuk Kontainer Utama */
+.kontakdb-container {
+    max-width: 900px;
+    margin: 40px auto; 
+    padding: 30px; 
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling Header - DIUBAH UNTUK FLEXBOX */
+.kontakdb-header { 
+    display: flex; /* Aktifkan Flexbox */
+    justify-content: space-between; /* Judul di kiri, Search di kanan */
+    align-items: center; /* Sejajarkan vertikal */
+    
+    border-bottom: 2px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+}
+
+.kontakdb-header h2 { 
+    font-size: 1.8rem;
+    color: #333;
+    margin: 0;
+}
+
+/* Styling Tabel Daftar Kontak */
+.kontakdb-list-table { 
+    overflow-x: auto; 
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+}
+
+/* Header Tabel */
+.table thead th {
+    background-color: #f8f9fa;
+    color: #495057;
+    text-align: left;
+    padding: 12px 15px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Baris Isi Tabel */
+.table tbody td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+/* Efek Hover pada Baris (Opsional) */
+.table tbody tr:hover {
+    background-color: #f2f2f2;
+    transition: background-color 0.3s ease;
+}
+
+
+/* --- PENYESUAIAN KHUSUS UNTUK KOLOM AKSI (AGAR MENTOK KANAN) --- */
+
+/* Penyesuaian Alignment Header Kolom Aksi */
+.table th.action-column {
+    text-align: right; 
+    width: 150px; 
+    padding-right: 15px !important; 
+}
+
+/* Penyesuaian Sel Data Kolom Aksi */
+.table td.action-column {
+    display: flex; 
+    justify-content: flex-end; /* Dorong semua konten ke ujung kanan */
+    align-items: center; 
+    height: 100%;
+    padding-right: 15px !important; 
+}
+
+/* Styling Tombol Aksi */
+.btn {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-right: 5px; 
+    text-decoration: none;
+    display: inline-block; 
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Styling Search Container - DIKECILKAN UNTUK MENTOK KANAN */
+.search-container {
+    position: relative;
+    width: 220px; /* Lebar dikurangi (dari 300px) */
+    margin-left: auto; /* Memastikan container search berada di paling kanan */
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 15px 8px 35px; /* Padding dikurangi untuk mengecilkan tinggi */
+    border: 1px solid #ccc;
+    border-radius: 6px; /* Dikecilkan */
+    font-size: 0.9rem; /* Dikecilkan */
+    transition: border-color 0.3s;
+}
+
+.search-input:focus {
+    border-color: #3f51b5;
+    outline: none;
+}
+
+.search-icon {
+    position: absolute;
+    top: 50%;
+    left: 10px; /* Disesuaikan agar ikon tidak terlalu besar */
+    transform: translateY(-50%);
+    color: #999;
+    font-size: 0.9rem; /* Dikecilkan */
+}
+
+/* Pastikan margin kanan dinolkan pada tombol terakhir */
+.table td.action-column .btn {
+    margin-left: 5px; 
+    margin-right: 0; 
+}
+
+/* Hapus margin kanan dari form yang membungkus tombol hapus */
+.table td.action-column form {
+    margin-right: 0 !important;
+}
