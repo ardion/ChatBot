@@ -9,44 +9,51 @@ class BroadcastController extends Controller
 {
     /**
      * Menerima permintaan broadcast dari frontend dan mengirimkannya ke API Watzap.id
-     * menggunakan cURL.
+     * menggunakan cURL. (Mendukung Teks, Gambar URL, dan File URL)
      */
     public function sendMessage(Request $request)
     {
         // 1. Validasi Input
         $validated = $request->validate([
             'api_key' => 'required|string',
-            'message' => 'required|string',
-            'phone_no' => 'required|array', // Array nomor dari frontend
+            'phone_no' => 'required|array', 
+            'content_type' => 'required|in:text,image,file', // Tipe konten baru
+            
+            // Input opsional untuk Teks
+            'message' => 'nullable|string', 
+
+            // Input opsional untuk Media
+            'file_url' => 'nullable|url', 
+            'caption' => 'nullable|string', 
+            'filename' => 'nullable|string', 
+
+            // Input Jadwal
             'schedule_time' => 'nullable|string', 
+            'schedule_date' => 'nullable|string', // Digunakan untuk pengiriman Once
         ]);
 
         $apiKey = $validated['api_key'];
-        $message = $validated['message'];
         $numbers = $validated['phone_no'];
+        $contentType = $validated['content_type'];
         $scheduleTime = $validated['schedule_time'] ?? null;
-        
-        // PENTING: Gunakan number_key yang Anda sediakan. 
-        $numberKey = 'skj8bkiF9RwjKyzb'; 
+        $scheduleDate = $validated['schedule_date'] ?? null;
 
-        // -------------------------------------------------------------------
-        // ENDPOINT API Watzap.id
-        $watzapApiUrl = 'https://api.watzap.id/v1/send_message';
-        // -------------------------------------------------------------------
+        // PENTING: Gunakan number_key yang terbukti benar untuk lisensi ini
+        $numberKey = 'skj8bkiF9RwjKyzb'; 
 
         $results = [];
         $hasFailed = false;
         $totalRecipients = count($numbers);
-
+        $messageSnippet = ($contentType === 'text') ? substr($request->input('message'), 0, 50) . '...' : "Media ({$contentType}) URL: " . substr($request->input('file_url'), 0, 50) . '...';
+        
         // --- LOGGING INPUT DARI FRONTEND (LEVEL INFO) ---
-        // Mencatat semua input yang diterima.
         Log::info('Broadcast Request Received (START):', [
+            'content_type' => $contentType,
             'api_key_sent_snippet' => substr($apiKey, 0, 8) . '...', 
             'number_key_used' => $numberKey,
             'total_recipients' => $totalRecipients,
-            'recipients_list' => $numbers, // Log semua nomor yang diterima
-            'schedule_time' => $scheduleTime ?? 'NOW',
-            'message_snippet' => substr($message, 0, 50) . '...' // Cuplikan pesan
+            'schedule_time' => $scheduleTime ? ($scheduleDate . ' ' . $scheduleTime) : 'NOW',
+            'content_snippet' => $messageSnippet
         ]);
         // ------------------------------------------------
 
@@ -59,78 +66,83 @@ class BroadcastController extends Controller
                  $cleanNumber = '62' . substr($cleanNumber, 1);
             }
             
-            // 2.2 Siapkan Data Payload (Sesuai Spesifikasi Watzap.id)
+            // 2.2 Tentukan Endpoint dan Payload berdasarkan Content Type
+            // Inisialisasi payload hanya dengan API key, number key, dan phone no
             $dataSending = [
                 "api_key" => $apiKey,
                 "number_key" => $numberKey, 
                 "phone_no" => $cleanNumber, 
-                "message" => $message,
-                "wait_until_send" => "1", 
             ];
+            $watzapApiUrl = '';
+            $typeForLog = '';
 
+            if ($contentType === 'text') {
+                $watzapApiUrl = 'https://api.watzap.id/v1/send_message';
+                $dataSending['message'] = $request->input('message');
+                $dataSending["wait_until_send"] = "1";
+                $typeForLog = 'text';
+                
+            } elseif ($contentType === 'image') {
+                $watzapApiUrl = 'https://api.watzap.id/v1/send_image_url';
+                $dataSending['url'] = $validated['file_url'];
+                $dataSending['message'] = $validated['caption'] ?? '';
+                // 0 untuk caption terpisah, 1 untuk caption digabung
+                $dataSending['separate_caption'] = (empty($validated['caption'])) ? "1" : "0"; 
+                $dataSending["wait_until_send"] = "1";
+                $typeForLog = 'image';
+
+            } elseif ($contentType === 'file') {
+                $caption = $validated['caption'] ?? '';
+                $fileUrl = $validated['file_url'];
+
+                // --- PENGIRIMAN 1 (TEKS CAPTION) ---
+                if (!empty($caption)) {
+                    $textPayload = [
+                        "api_key" => $apiKey,
+                        "number_key" => $numberKey, 
+                        "phone_no" => $cleanNumber, 
+                        "message" => $caption,
+                        "wait_until_send" => "1",
+                    ];
+                    
+                    // Panggil Helper untuk pengiriman teks/caption terpisah
+                    // Hasilnya diabaikan dari $results utama, tapi dicatat di log
+                    $this->executeCurl('https://api.watzap.id/v1/send_message', $textPayload, $cleanNumber, 'text_caption');
+                }
+                // ---------------------------------------------
+
+
+                // --- PENGIRIMAN 2 (FILE) ---
+                $watzapApiUrl = 'https://api.watzap.id/v1/send_file_url';
+                $dataSending['url'] = $fileUrl; // Payload minimal untuk file
+                $typeForLog = 'file_only';
+            }
+            
             // Tambahkan jadwal jika ada
             if (!empty($scheduleTime)) {
-                // Asumsi format API Watzap adalah YYYY-MM-DD HH:MM:SS
-                $dataSending['schedule_time'] = date('Y-m-d') . ' ' . $scheduleTime . ':00';
+                if (!empty($scheduleDate)) {
+                     // Mode Once (Tanggal & Jam)
+                    $dataSending['schedule_time'] = $scheduleDate . ' ' . $scheduleTime . ':00';
+                } else {
+                    // Mode Daily (Jam saja)
+                    $dataSending['schedule_time'] = $scheduleTime . ':00';
+                }
             }
             
             // --- DEBUG: LOGGING PAYLOAD SEBELUM KIRIM (LEVEL INFO) ---
-            // Mengubah Log::debug menjadi Log::info agar lebih mudah terlihat di log.
-            Log::info("Watzap Payload (Attempting to send to {$cleanNumber}):", $dataSending);
+            Log::info("Watzap Payload ({$contentType} to {$cleanNumber}):", $dataSending);
             // --------------------------------------------
 
-            // 3. Eksekusi cURL
-            $curl = curl_init();
-            curl_setopt_array($curl, [
-                CURLOPT_URL => $watzapApiUrl,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 30, // Timeout 30 detik
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => json_encode($dataSending),
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json'
-                ],
-                // Pastikan SSL diaktifkan jika menggunakan HTTPS
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
-            ]);
+            // 3. Eksekusi cURL dengan Helper (Menggantikan seluruh blok cURL lama)
+            $decodedResponse = $this->executeCurl($watzapApiUrl, $dataSending, $cleanNumber, $typeForLog);
             
-            $response = curl_exec($curl);
-            $err = curl_error($curl);
-            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            curl_close($curl);
-            
-            // 4. Proses Hasil
-            if ($err) {
-                // cURL GAGAL (masalah jaringan/server)
+            // 4. Proses Hasil (Menggunakan hasil dari Helper)
+            // Jika pengiriman file utama gagal, catat kegagalan
+            if (isset($decodedResponse['status']) && $decodedResponse['status'] === 'error') {
                 $hasFailed = true;
-                Log::error("cURL Connection Error to {$cleanNumber}: " . $err, ['payload' => $dataSending]); 
-                $results[$cleanNumber] = ['status' => 'error', 'message' => "cURL failed: {$err}"];
-                
+                $results[$cleanNumber] = $decodedResponse;
             } else {
-                
-                $decodedResponse = json_decode($response, true);
-                
-                // 4.1 Cek Kegagalan HTTP (Non-200)
-                if ($httpCode !== 200) {
-                    Log::warning("Watzap API returned non-200 HTTP code ({$httpCode}) for {$cleanNumber}.", ['response_body' => $response, 'payload' => $dataSending]);
-                    $hasFailed = true;
-                    $results[$cleanNumber] = ['status' => 'error', 'message' => "HTTP {$httpCode} from API", 'detail' => $response];
-                    
-                // 4.2 Cek Kegagalan Logis (Status 'error' dari JSON)
-                } elseif (!isset($decodedResponse['status']) || $decodedResponse['status'] === 'error') {
-                    $hasFailed = true;
-                    $apiMessage = $decodedResponse['message'] ?? 'Unknown API Error';
-                    // LOGGING GAGAL DARI API (LEVEL WARNING)
-                    Log::warning("Watzap API failed to send to {$cleanNumber}: " . $apiMessage, ['full_response' => $decodedResponse, 'payload' => $dataSending]);
-                    $results[$cleanNumber] = $decodedResponse;
-                    
-                // 4.3 Sukses
-                } else {
-                    // LOGGING SUKSES (LEVEL INFO)
-                    Log::info("Watzap API Success for {$cleanNumber}:", ['full_response' => $decodedResponse]);
-                    $results[$cleanNumber] = $decodedResponse;
-                }
+                $results[$cleanNumber] = $decodedResponse;
             }
         }
         
@@ -145,8 +157,58 @@ class BroadcastController extends Controller
         
         return response()->json([
             'status' => 'success', 
-            'message' => "Pengiriman ke {$totalRecipients} kontak berhasil diproses.",
+            'message' => "Pengiriman {$contentType} ke {$totalRecipients} kontak berhasil diproses.",
             'details' => $results
         ]);
+    }
+    
+    // --- FUNGSI HELPER BARU UNTUK EKSEKUSI cURL ---
+    private function executeCurl($url, $payload, $number, $type = 'file_or_media')
+    {
+        // PENTING: Gunakan number_key yang terbukti benar untuk lisensi ini
+        // (Diambil dari $numberKey di dalam sendMessage)
+        $numberKey = 'skj8bkiF9RwjKyzb'; 
+
+        $curl = curl_init();
+        
+        // Cek jika payload tidak memiliki number_key, tambahkan
+        if (!isset($payload['number_key'])) {
+            $payload['number_key'] = $numberKey;
+        }
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json'
+            ],
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+        
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        
+        // Logika sederhana untuk logging hasil helper
+        if ($err) {
+            Log::error("cURL Connection Error for {$type} to {$number}: " . $err, ['payload' => $payload]); 
+            return ['status' => 'error', 'message' => "cURL failed: {$err}"];
+        }
+        
+        $decodedResponse = json_decode($response, true);
+        
+        if ($httpCode !== 200 || (isset($decodedResponse['status']) && ($decodedResponse['status'] === 'error' || $decodedResponse['status'] === '1003'))) {
+            $apiMessage = $decodedResponse['message'] ?? 'Unknown API Error';
+            Log::warning("Watzap API failed to send {$type} to {$number} (HTTP {$httpCode}): " . $apiMessage, ['full_response' => $decodedResponse, 'payload' => $payload]);
+            return ['status' => 'error', 'message' => $apiMessage, 'full_response' => $decodedResponse];
+        }
+        
+        Log::info("Watzap API Success for {$type} to {$number}:", ['full_response' => $decodedResponse]);
+        return $decodedResponse;
     }
 }

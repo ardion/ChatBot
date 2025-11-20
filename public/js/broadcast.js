@@ -24,9 +24,10 @@ const textFields = document.getElementById('textFields');
 const imageFields = document.getElementById('imageFields');
 const fileFields = document.getElementById('fileFields');
 
-const imageUpload = document.getElementById('imageUpload');
+// DIGANTI: Menggunakan input URL
+const imageUrlInput = document.getElementById('imageUrlInput'); 
 const imageCaption = document.getElementById('imageCaption');
-const fileUpload = document.getElementById('fileUpload');
+const fileUrlInput = document.getElementById('fileUrlInput'); 
 const fileCaption = document.getElementById('fileCaption');
 // ========================================
 
@@ -34,13 +35,13 @@ const fileCaption = document.getElementById('fileCaption');
 const editFieldsText = document.getElementById('editFieldsText');
 
 const editFieldsImage = document.getElementById('editFieldsImage');
-const currentImageFile = document.getElementById('currentImageFile');
-const editImageUpload = document.getElementById('editImageUpload');
+const currentImageUrl = document.getElementById('currentImageUrl'); // DIGANTI
+const editImageUrlInput = document.getElementById('editImageUrlInput'); // DIGANTI
 const editImageCaption = document.getElementById('editImageCaption');
 
 const editFieldsFile = document.getElementById('editFieldsFile');
-const currentFileFile = document.getElementById('currentFileFile');
-const editFileUpload = document.getElementById('editFileUpload');
+const currentFileUrl = document.getElementById('currentFileUrl'); // DIGANTI
+const editFileUrlInput = document.getElementById('editFileUrlInput'); // DIGANTI
 const editFileCaption = document.getElementById('editFileCaption');
 // =================================================
 
@@ -95,20 +96,20 @@ function saveCurrentMessageChanges(shouldResetEditor = false) {
         msg.text = messageInput.value;
         msg.content = { text: messageInput.value };
     } else if (msg.contentType === 'image') {
-        // Jika ada file baru yang diunggah, simpan namanya (simulasi)
-        if (editImageUpload && editImageUpload.files.length > 0) {
-            msg.content.file_name = editImageUpload.files[0].name;
-            msg.content.type = editImageUpload.files[0].type;
-            editImageUpload.value = null; // Clear input file setelah simpan
+        // Jika ada URL baru yang diinput, simpan
+        if (editImageUrlInput && editImageUrlInput.value.trim() !== '') {
+            msg.content.url = editImageUrlInput.value.trim(); // Simpan URL
+            // Simulasi nama file (dari URL)
+            msg.content.file_name = msg.content.url.split('/').pop().split('?')[0];
+            editImageUrlInput.value = ''; // Clear input setelah simpan
         }
         msg.content.caption = editImageCaption ? editImageCaption.value : '';
-        // Kita perbarui msg.text untuk sinkronisasi (mengambil caption/teks)
         msg.text = msg.content.caption; 
     } else if (msg.contentType === 'file') {
-        if (editFileUpload && editFileUpload.files.length > 0) {
-            msg.content.file_name = editFileUpload.files[0].name;
-            msg.content.type = editFileUpload.files[0].type;
-            editFileUpload.value = null; // Clear input file setelah simpan
+        if (editFileUrlInput && editFileUrlInput.value.trim() !== '') {
+            msg.content.url = editFileUrlInput.value.trim(); // Simpan URL
+            msg.content.file_name = msg.content.url.split('/').pop().split('?')[0];
+            editFileUrlInput.value = ''; // Clear input setelah simpan
         }
         msg.content.caption = editFileCaption ? editFileCaption.value : '';
         msg.text = msg.content.caption;
@@ -160,10 +161,12 @@ function saveCurrentMessageChanges(shouldResetEditor = false) {
     } else {
         // Jika tidak reset, muat ulang tampilan editor saat ini
         const currentMsg = messages.find(m => m.id === id);
-        if (currentMsg.contentType === 'image' && currentImageFile) {
-             currentImageFile.textContent = currentMsg.content.file_name || 'Tidak ada file';
-        } else if (currentMsg.contentType === 'file' && currentFileFile) {
-             currentFileFile.textContent = currentMsg.content.file_name || 'Tidak ada file';
+        if (currentMsg.contentType === 'image' && currentImageUrl) {
+             currentImageUrl.textContent = currentMsg.content.url || 'Tidak ada URL';
+             editImageUrlInput.value = currentMsg.content.url || '';
+        } else if (currentMsg.contentType === 'file' && currentFileUrl) {
+             currentFileUrl.textContent = currentMsg.content.url || 'Tidak ada URL';
+             editFileUrlInput.value = currentMsg.content.url || '';
         }
     }
 }
@@ -288,7 +291,7 @@ function loadMessages() {
         // Tambahkan properti 'contentType' dan 'content' (default text)
         { id: 1, title: "Promo Diskon Akhir Tahun", text: "Dapatkan diskon spesial...", apiKey: null, scheduleMode: 'daily', scheduleValue: '08:00', active: true, recipients: ["6281234567890", "6287654321098"], contentType: 'text', content: {text: "Dapatkan diskon spesial..."} },
         { id: 2, title: "Pengumuman Maintenance Server", text: "Mohon maaf atas ketidaknyamanan...", apiKey: null, scheduleMode: '', scheduleValue: '', active: true, recipients: [], contentType: 'text', content: {text: "Mohon maaf atas ketidaknyamanan..."} },
-        { id: 3, title: "Ucapan Selamat Hari Raya", text: "Selamat Hari Raya Idul Fitri...", apiKey: null, scheduleMode: 'once', scheduleValue: '2025-04-01T06:00', active: false, recipients: [], contentType: 'text', content: {text: "Selamat Hari Raya Idul Fitri..."} } 
+        { id: 3, title: "Ucapan Selamat Hari Raya", text: "Selamat Hari Raya Idul Fitri", apiKey: null, scheduleMode: 'once', scheduleValue: '2025-04-01T06:00', active: false, recipients: [], contentType: 'image', content: {url: "https://example.com/image.jpg", file_name: "image.jpg", caption: "Selamat Hari Raya Idul Fitri"} } 
     ];
     
     // Pastikan semua objek pesan memiliki properti 'recipients', 'contentType', dan 'content'
@@ -394,11 +397,13 @@ function attachItemEvents(item) {
             messageInput.disabled = false;
         } else if (contentType === 'image') {
             editFieldsImage.style.display = 'block';
-            currentImageFile.textContent = msg.content.file_name || 'Tidak ada file';
+            currentImageUrl.textContent = msg.content.url || 'Tidak ada URL'; // DIGANTI
+            editImageUrlInput.value = msg.content.url || ''; // DIGANTI
             editImageCaption.value = msg.content.caption || '';
         } else if (contentType === 'file') {
             editFieldsFile.style.display = 'block';
-            currentFileFile.textContent = msg.content.file_name || 'Tidak ada file';
+            currentFileUrl.textContent = msg.content.url || 'Tidak ada URL'; // DIGANTI
+            editFileUrlInput.value = msg.content.url || ''; // DIGANTI
             editFileCaption.value = msg.content.caption || '';
         }
         // ----------------------------------------------------
@@ -419,9 +424,11 @@ function resetEditor() {
     currentItem = null;
     document.querySelectorAll(".list li").forEach(li => li.classList.remove("active"));
     
-    // Reset inputs file
-    if (editImageUpload) editImageUpload.value = null;
-    if (editFileUpload) editFileUpload.value = null;
+    // Reset inputs URL
+    if (editImageUrlInput) editImageUrlInput.value = '';
+    if (editImageCaption) editImageCaption.value = '';
+    if (editFileUrlInput) editFileUrlInput.value = '';
+    if (editFileCaption) editFileCaption.value = '';
     
     if (scheduleDateInput) { 
         scheduleDateInput.value = ''; 
@@ -442,9 +449,9 @@ addBtn.addEventListener("click", () => {
     newMessageInput.value = "";
     
     // Reset field Gambar/File modal tambah
-    if (imageUpload) imageUpload.value = null;
+    if (imageUrlInput) imageUrlInput.value = '';
     if (imageCaption) imageCaption.value = '';
-    if (fileUpload) fileUpload.value = null;
+    if (fileUrlInput) fileUrlInput.value = '';
     if (fileCaption) fileCaption.value = '';
 
     // Reset chips ke default 'Teks'
@@ -461,7 +468,7 @@ addBtn.addEventListener("click", () => {
 // === Simpan perubahan (Editor) ===
 saveBtn.addEventListener("click", () => {
     if (currentItem) {
-        saveCurrentMessageChanges(true); // Jangan reset editor setelah save
+        saveCurrentMessageChanges(false); // Jangan reset editor setelah save
     } else {
         showNotification("Pilih pesan yang ingin disimpan dahulu!", "error");
     }
@@ -478,10 +485,10 @@ cancelBtn.addEventListener("click", () => {
             messageInput.value = msg.text;
         } else if (msg.contentType === 'image') {
             if (editImageCaption) editImageCaption.value = msg.content.caption || '';
-            if (editImageUpload) editImageUpload.value = null; // Reset input file
+            if (editImageUrlInput) editImageUrlInput.value = msg.content.url || ''; // DIGANTI
         } else if (msg.contentType === 'file') {
             if (editFileCaption) editFileCaption.value = msg.content.caption || '';
-            if (editFileUpload) editFileUpload.value = null; // Reset input file
+            if (editFileUrlInput) editFileUrlInput.value = msg.content.url || ''; // DIGANTI
         }
         
         loadMessageSettings(msg);
@@ -573,24 +580,28 @@ modalCreateBtn.addEventListener("click", () => {
         newContent = { text: text };
         initialText = text;
     } else if (contentType === 'image') {
-        const file = imageUpload ? imageUpload.files[0] : null;
+        const url = imageUrlInput ? imageUrlInput.value.trim() : ''; // DIGANTI
         const caption = imageCaption ? imageCaption.value.trim() : '';
         
-        if (!file) {
-            showNotification("Unggah file Gambar tidak boleh kosong!", "error");
+        if (url === "") { // Validasi URL
+            showNotification("URL Gambar tidak boleh kosong!", "error");
             isContentValid = false;
         }
-        newContent = { file_name: file ? file.name : null, caption: caption, type: file ? file.type : null };
+        
+        const fileName = url ? url.split('/').pop().split('?')[0] : null; 
+        newContent = { url: url, file_name: fileName, caption: caption }; // Simpan URL
         initialText = caption; 
     } else if (contentType === 'file') {
-        const file = fileUpload ? fileUpload.files[0] : null;
+        const url = fileUrlInput ? fileUrlInput.value.trim() : ''; // DIGANTI
         const caption = fileCaption ? fileCaption.value.trim() : '';
         
-        if (!file) {
-            showNotification("Unggah file Dokumen tidak boleh kosong!", "error");
+        if (url === "") { // Validasi URL
+            showNotification("URL File Dokumen tidak boleh kosong!", "error");
             isContentValid = false;
         }
-        newContent = { file_name: file ? file.name : null, caption: caption, type: file ? file.type : null };
+        
+        const fileName = url ? url.split('/').pop().split('?')[0] : null;
+        newContent = { url: url, file_name: fileName, caption: caption }; // Simpan URL
         initialText = caption;
     }
 
@@ -656,15 +667,30 @@ function renderSelectedContacts() {
 function syncSelectedContacts() {
     selectedContacts.clear(); 
     
+    const storedContacts = localStorage.getItem('customKontak');
+    const dummyContacts = [
+        { nama: "Budi", nomor: "6281234567890" },
+        { nama: "Sinta", nomor: "6287654321098" },
+        { nama: "Joko", nomor: "6289876543210" },
+        { nama: "Ani", nomor: "6285511223344" },
+    ];
+    const contacts = storedContacts ? JSON.parse(storedContacts) : dummyContacts;
+    
     Array.from(contactDropdown.selectedOptions).forEach(option => {
         const number = option.value; 
         
-        // Logika Pengambilan Nama Kontak
-        const fullText = option.textContent.trim();
-        const firstParenIndex = fullText.indexOf('(');
-        const name = firstParenIndex !== -1 ? fullText.substring(0, firstParenIndex).trim() : fullText;
-
-        selectedContacts.set(number, { nama: name, nomor: number });
+        // Cari kontak lengkap
+        const contact = contacts.find(c => c.nomor === number);
+        
+        if (contact) {
+            selectedContacts.set(number, contact);
+        } else {
+             // Fallback: Gunakan nama dari dropdown jika data kontak lengkap tidak ada
+             const fullText = option.textContent.trim();
+             const firstParenIndex = fullText.indexOf('(');
+             const name = firstParenIndex !== -1 ? fullText.substring(0, firstParenIndex).trim() : fullText;
+             selectedContacts.set(number, { nama: name, nomor: number });
+        }
     });
     
     renderSelectedContacts();
@@ -749,6 +775,8 @@ function showSendModal() {
             // Tambahkan hanya jika kontak ditemukan di daftar kontak
             if (contact) {
                 selectedContacts.set(number, contact); 
+            } else {
+                 selectedContacts.set(number, { nama: number, nomor: number });
             }
         });
     }
@@ -792,7 +820,7 @@ sendBtn.addEventListener('click', () => {
         let contentCheck = true;
         if (msg.contentType === 'text' && msg.text.trim() === "") {
             contentCheck = false;
-        } else if ((msg.contentType === 'image' || msg.contentType === 'file') && !msg.content.file_name) {
+        } else if ((msg.contentType === 'image' || msg.contentType === 'file') && !msg.content.url) { // Cek URL
              contentCheck = false;
         }
 
@@ -801,7 +829,7 @@ sendBtn.addEventListener('click', () => {
             saveCurrentMessageChanges(false); 
             showSendModal();
         } else {
-            showNotification("Konten pesan tidak boleh kosong!", "error");
+            showNotification("Konten pesan tidak boleh kosong! (Pastikan URL/Teks sudah diisi)", "error");
         }
         
     } else {
@@ -826,9 +854,7 @@ modalSendBtn.addEventListener('click', async function() {
     const id = parseInt(currentItem.getAttribute("data-id"));
     const msg = messages.find(m => m.id === id);
 
-    const selectedApiKeyValue = apiKeySelect ? apiKeySelect.value : '';
-    const finalScheduleMode = msg.scheduleMode || ''; 
-    const finalScheduleValue = msg.scheduleValue || ''; 
+    const selectedApiKeyValue = msg.apiKey.value || ''; 
     
     if (numbersToSend.length === 0) {
         showNotification('Pilih minimal satu nomor untuk dikirim!', 'error');
@@ -841,25 +867,37 @@ modalSendBtn.addEventListener('click', async function() {
     }
 
     // --- KRUSIAL: Simpan Daftar Penerima ke Objek Pesan Aktif ---
-    msg.recipients = numbersToSend; // Simpan nomor yang dipilih saat ini
-    saveMessages(); // Simpan ke localStorage
+    msg.recipients = numbersToSend; 
+    saveMessages(); 
     // ----------------------------------------------------------------
 
-    // 2. Kumpulkan data untuk dikirim ke API
-    let data = {
-        api_key: selectedApiKeyValue,
-        phone_no: numbersToSend, 
-        schedule_mode: finalScheduleMode, 
-        schedule_value: finalScheduleValue, 
-    };
-
-    // --- TAMBAHAN LOGIKA PENGIRIMAN MULTI-KONTEN ---
+    // 2. Kumpulkan data untuk dikirim ke SERVER LARAVEL
+    
+    const finalScheduleMode = msg.scheduleMode || ''; 
+    const finalScheduleValue = msg.scheduleValue || ''; 
+    
     let formData = new FormData();
     formData.append('api_key', selectedApiKeyValue);
-    // JSON.stringify karena phone_no adalah array
-    formData.append('phone_no', JSON.stringify(numbersToSend)); 
-    formData.append('schedule_mode', finalScheduleMode); 
-    formData.append('schedule_value', finalScheduleValue); 
+    
+    // Perbaiki format schedule time agar Laravel bisa memprosesnya
+    let scheduleTime = '';
+    if (finalScheduleMode === 'once' && finalScheduleValue) {
+        // Jika terjadwal, ambil hanya bagian jam (asumsi Laravel akan mengurus tanggal)
+        scheduleTime = finalScheduleValue.split('T')[1] || ''; 
+        // Tambahkan tanggal lengkap untuk membantu Laravel memproses
+        formData.append('schedule_date', finalScheduleValue.split('T')[0] || ''); 
+    } else if (finalScheduleMode === 'daily' && finalScheduleValue) {
+        scheduleTime = finalScheduleValue;
+    }
+    
+    formData.append('schedule_time', scheduleTime); 
+    
+    // Lampirkan semua nomor
+    numbersToSend.forEach(number => {
+        formData.append('phone_no[]', number); 
+    });
+    
+    // Lampirkan tipe konten
     formData.append('content_type', msg.contentType);
 
     if (msg.contentType === 'text') {
@@ -867,50 +905,41 @@ modalSendBtn.addEventListener('click', async function() {
              showNotification('Isi pesan teks tidak boleh kosong!', 'error');
              return;
         }
-        // Gunakan properti 'text' (yang di-sinkronkan dengan editor)
         formData.append('message', msg.text); 
+        
     } else if (msg.contentType === 'image' || msg.contentType === 'file') {
-        if (!msg.content.file_name) {
-            showNotification(`Pesan ${msg.contentType} belum memiliki file untuk dikirim!`, 'error');
+        if (!msg.content.url) { 
+            showNotification(`Pesan ${msg.contentType} belum memiliki URL file!`, 'error');
             return;
         }
-        
+        // Kirim metadata file (URL, caption, filename) ke Laravel
         formData.append('caption', msg.content.caption || '');
-        formData.append('filename', msg.content.file_name); // Kirim metadata
-        formData.append('filetype', msg.content.type || '');
-        // Catatan: Di sini Anda perlu menambahkan logika untuk mengirim binary file yang AKTUAL 
-        // jika Anda benar-benar mengimplementasikan upload.
+        formData.append('file_url', msg.content.url); 
+        formData.append('filename', msg.content.file_name); 
     } 
 
-    // 3. Panggil fungsi pengiriman API
-    // Kita kirimkan selalu dalam bentuk FormData untuk kompatibilitas di server (walaupun teks)
+    // Panggil fungsi pengiriman API ke Laravel
     await sendBroadcastMessage(formData);
-
-    // 4. Tutup modal setelah pemicu pengiriman
+    
+    // 3. Tutup modal setelah pemicu pengiriman
     hideModal();
 });
 
-
-// FUNGSI KRUSIAL: MENGIRIM DATA KE BACKEND LARAVEL VIA FETCH
+// FUNGSI KRUSIAL: MENGIRIM DATA KE BACKEND LARAVEL VIA FETCH (Digunakan untuk SEMUA TIPE KONTEN)
 async function sendBroadcastMessage(data) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
-    // Ambil nomor dari data (array string di FormData, atau langsung dari data JSON)
+    // Ambil nomor untuk notifikasi
     let numbers = [];
-    if (data.get && data.get('phone_no')) {
-        try {
-            numbers = JSON.parse(data.get('phone_no'));
-        } catch(e) { /* ignore */ }
-    } else if (data.phone_no) {
-        numbers = data.phone_no;
+    if (data.get && data.getAll('phone_no[]')) {
+        numbers = data.getAll('phone_no[]'); 
     }
     
-    showNotification(`Memulai pengiriman ke ${numbers.length} kontak...`, 'info');
+    showNotification(`Memulai pengiriman ke ${numbers.length} kontak via Server Laravel...`, 'info');
     
     modalSendBtn.textContent = 'Mengirim...';
     modalSendBtn.disabled = true;
 
-    // Tentukan header. Karena kita selalu menggunakan FormData, kita tidak perlu set Content-Type: application/json
     let headers = {
         'X-CSRF-TOKEN': csrfToken 
     };
@@ -919,19 +948,30 @@ async function sendBroadcastMessage(data) {
         const response = await fetch('/api/send-watzap', { 
             method: 'POST',
             headers: headers,
-            body: data
+            body: data 
         });
         
         if (!response.ok) {
+            if (response.status === 302) {
+                 showNotification(`❌ Gagal: Akses Ditolak (302 Found). Pastikan Anda sudah login & rute API benar!`, 'error');
+                 console.error("302 Found Error. Kemungkinan redirect ke halaman login/error (Auth/CSRF/Middleware).");
+                 return;
+            }
+            
             const errorText = await response.text();
             
             if (errorText.trim().startsWith('<!DOCTYPE')) {
                 showNotification(`❌ Gagal koneksi (HTTP ${response.status}). Cek CSRF Token atau Rute Server!`, 'error');
                 console.error("Server returned HTML Error (Expected JSON), likely CSRF or Route issue:", errorText);
             } else {
-                const errorData = JSON.parse(errorText);
-                showNotification(`❌ Gagal mengirim: ${errorData.message || 'Error server tidak diketahui.'}`, 'error');
-                console.error("Server JSON Error:", errorData);
+                try {
+                    const errorData = JSON.parse(errorText);
+                    showNotification(`❌ Gagal mengirim: ${errorData.message || 'Error server tidak diketahui.'}`, 'error');
+                    console.error("Server JSON Error:", errorData);
+                } catch(e) {
+                     showNotification(`❌ Gagal (HTTP ${response.status}): Respons server tidak terduga.`, 'error');
+                     console.error("Non-HTML, Non-JSON Response:", errorText);
+                }
             }
             return;
         }
@@ -939,11 +979,11 @@ async function sendBroadcastMessage(data) {
         const responseData = await response.json();
         
         if (responseData.status === 'success') {
-            showNotification(`✅ Semua pesan berhasil dikirim!`, 'success');
+            showNotification(`✅ Semua pesan berhasil dikirim via Laravel!`, 'success');
             console.log("Pengiriman Sukses:", responseData);
         } else {
-            showNotification(`⚠️ Gagal di API Watzap: ${responseData.message}`, 'warning');
-            console.warn("Pengiriman Gagal di API Watzap (Cek Log Server):", responseData);
+            showNotification(`⚠️ Gagal di Server Laravel: ${responseData.message}`, 'warning');
+            console.warn("Pengiriman Gagal di Server Laravel (Cek Log Server):", responseData);
         }
         
     } catch (error) {

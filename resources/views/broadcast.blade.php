@@ -26,7 +26,7 @@
             <textarea id="messageInput"></textarea>
         </div>
 
-        <div id="editFieldsImage" class="edit-fields" style="display:none;">
+        <!-- <div id="editFieldsImage" class="edit-fields" style="display:none;">
             <p><strong>File Terpilih:</strong> <span id="currentImageFile">-</span></p>
             <label for="editImageUpload" style="margin-top: 10px;">Ganti Gambar:</label>
             <input type="file" id="editImageUpload" accept="image/*">
@@ -38,6 +38,24 @@
             <p><strong>File Terpilih:</strong> <span id="currentFileFile">-</span></p>
             <label for="editFileUpload" style="margin-top: 10px;">Ganti File:</label>
             <input type="file" id="editFileUpload" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+            <label for="editFileCaption" style="margin-top: 15px;">Caption:</label>
+            <textarea id="editFileCaption"></textarea>
+        </div> -->
+
+        <div id="editFieldsImage" class="edit-fields" style="display:none;">
+            <p><strong>URL Terpilih:</strong> <span id="currentImageUrl">-</span></p>
+            <label for="editImageUrlInput" style="margin-top: 10px;">Ganti URL Gambar:</label>
+            {{-- MENGGANTI editImageUpload DENGAN editImageUrlInput --}}
+            <input type="text" id="editImageUrlInput" placeholder="Masukkan URL gambar">
+            <label for="editImageCaption" style="margin-top: 15px;">Caption:</label>
+            <textarea id="editImageCaption"></textarea>
+        </div>
+
+        <div id="editFieldsFile" class="edit-fields" style="display:none;">
+            <p><strong>URL Terpilih:</strong> <span id="currentFileUrl">-</span></p>
+            <label for="editFileUrlInput" style="margin-top: 10px;">Ganti URL File:</label>
+            {{-- MENGGANTI editFileUpload DENGAN editFileUrlInput --}}
+            <input type="text" id="editFileUrlInput" placeholder="Masukkan URL file">
             <label for="editFileCaption" style="margin-top: 15px;">Caption:</label>
             <textarea id="editFileCaption"></textarea>
         </div>
@@ -126,7 +144,7 @@
                 <textarea id="newMessageInput" placeholder="Tulis isi pesan teks di sini"></textarea>
             </div>
 
-            <div id="imageFields" class="content-fields" style="display:none;">
+            <!-- <div id="imageFields" class="content-fields" style="display:none;">
                 <label for="imageUpload" style="margin-top: 15px;">Unggah Gambar:</label>
                 <input type="file" id="imageUpload" accept="image/*">
                 
@@ -140,7 +158,26 @@
                 
                 <label for="fileCaption" style="margin-top: 15px;">Caption (Opsional):</label>
                 <textarea id="fileCaption" placeholder="Tulis caption file di sini"></textarea>
-            </div>
+            </div> -->
+          <div id="imageFields" class="content-fields" style="display:none;">
+              <label for="imageUrlInput" style="margin-top: 15px;">URL Gambar:</label>
+              {{-- MENGGANTI imageUpload DENGAN imageUrlInput --}}
+              <input type="text" id="imageUrlInput" placeholder="Masukkan URL gambar (cth: https://contoh.com/gambar.jpg)"> 
+              
+              <label for="imageCaption" style="margin-top: 15px;">Caption (Opsional):</label>
+              <textarea id="imageCaption" placeholder="Tulis caption gambar di sini"></textarea>
+          </div>  
+
+          <div id="fileFields" class="content-fields" style="display:none;">
+              <label for="fileUrlInput" style="margin-top: 15px;">URL File Dokumen:</label>
+              {{-- MENGGANTI fileUpload DENGAN fileUrlInput --}}
+              <input type="text" id="fileUrlInput" placeholder="Masukkan URL file (cth: https://contoh.com/dokumen.pdf)">
+              
+              <label for="fileCaption" style="margin-top: 15px;">Caption (Opsional):</label>
+              <textarea id="fileCaption" placeholder="Tulis caption file di sini"></textarea>
+          </div>
+
+
 
         </div>
         <div class="modal-footer">
